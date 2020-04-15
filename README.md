@@ -8,9 +8,12 @@ A deep learning approach to calling de novo mutations (DNMs).
 [tabix 0.2.6](http://www.htslib.org/doc/tabix.html)
 
 Python 3.5  
-Tensorflow  
-Keras  
-Pysam  
+Tensorflow 1.10.0  
+Keras 2.2.2  
+Pysam  0.8.4  
+Pandas 0.22.0  
+Pillow 5.2.0  
+Opencv 3.4.2  
 
 ## Usage
 
@@ -51,7 +54,7 @@ KERAS_BACKEND=tensorflow python main.py \
 --child-bam=<PATH_TP_FATHER_BAM> \
 --father-bam=<PATH_TP_FATHER_BAM> \
 --mother-bam=<PATH_TP_MOTHER_BAM> \
---intersected=<WHERE_TO> \
+--intersected=<PATH_TO_INTERSECTED_FILE> \
 --mother-bam=<PATH_TP_MOTHER_BAM> \
 
 ```

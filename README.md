@@ -1,4 +1,4 @@
-# DeNovoNet
+# denovoCNN
 
 A deep learning approach to calling de novo mutations (DNMs).
 

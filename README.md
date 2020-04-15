@@ -3,6 +3,7 @@
 A deep learning approach to calling de novo mutations (DNMs).
 
 ## Requirements
+
 [Bcftools 1.8](https://samtools.github.io/bcftools/)
 [bgzip 1.4.1](http://www.htslib.org/doc/bgzip.html)
 [tabix 0.2.6](http://www.htslib.org/doc/tabix.html)
@@ -13,7 +14,30 @@ Keras 2.2.2
 Pysam  0.8.4  
 Pandas 0.22.0  
 Pillow 5.2.0  
-Opencv 3.4.2  
+Opencv 3.4.2 
+
+## Installation
+Recommended way of installing is creating an [Anaconda](https://www.anaconda.com/) environment.
+
+```bash
+#Create environment 
+conda create -n denovocnn python=3.5
+
+#Activate environment 
+conda activate denovocnn
+
+#Install bcftools and tabix+bgzip (single package) 
+conda install -c bioconda bcftools
+conda install -c bioconda tabix
+
+#Install Python libraries
+conda install -c conda-forge tensorflow=1.10.0
+conda install -c conda-forge keras=2.2.2
+conda install -c bioconda pysam
+conda install -c anaconda pandas
+conda install -c anaconda pillow
+conda install -c conda-forge opencv
+```
 
 ## Usage
 
@@ -40,23 +64,40 @@ KERAS_BACKEND=tensorflow python main.py \
 --train-dataset=<PATH_TO_TRAINING_DATASET_TSV> \
 --val-dataset=<PATH_TO_VALIDATION_DATASET_TSV> \
 --images=<PATH_TO_FOLDER_SAVING_IMAGES> \
---dataset-name=<DATASET_NAME> \
---
+--dataset-name=<DATASET_NAME>
 
 ```
 
 ### Prediction
 
 ```bash
+./predict.sh \
+-w <WORKING_DIRECTORY> \
+-cv <CHILD_VCF> \
+-fv <FATHER_VCF> \
+-mv <MOTHER_VCF> \
+-cb <CHILD_BAM> \
+-fb <FATHER_BAM> \
+-mb <MOTHER_BAM> \
+-sm <SNP_MODEL> \
+-im <INSERTION_MODEL> \
+-dm <DELETION_MODEL> \
+-g <REFERENCE_GENOME> \
+-o <OUTPUT_FILE_NAME> \
+```
+OR
+```bash
 KERAS_BACKEND=tensorflow python main.py \
 --mode=predict \
 --genome=<PATH_TO_GENOME_FASTA_FILE> \
---child-bam=<PATH_TP_FATHER_BAM> \
---father-bam=<PATH_TP_FATHER_BAM> \
---mother-bam=<PATH_TP_MOTHER_BAM> \
+--child-bam=<PATH_TO_FATHER_BAM> \
+--father-bam=<PATH_TO_FATHER_BAM> \
+--mother-bam=<PATH_TO_MOTHER_BAM> \
 --intersected=<PATH_TO_INTERSECTED_FILE> \
---mother-bam=<PATH_TP_MOTHER_BAM> \
-
+--mother-bam=<PATH_TO_MOTHER_BAM> \
+--snp-model=<PATH_TO_SNP_MODEL> \
+--in-model=<PATH_TO_INSERTION_MODEL> \
+--del-model=<PATH_TO_DELETION_MODEL>
 ```
 
 ## Contributing

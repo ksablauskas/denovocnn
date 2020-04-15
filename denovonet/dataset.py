@@ -8,8 +8,7 @@ from denovonet.settings import TRAINING_VALIDATION_SPLIT, TRAINING_X, TRAINING_Y
 
 from denovonet.variants import SingleVariant, TrioVariant
 from denovonet.encoders import VariantInheritance
-from denovonet.local_utils import get_rumc_bam_path
-from denovonet.data_augmentation import augment_img
+# from denovonet.local_utils import get_rumc_bam_path
 
 class Dataset():
 
@@ -142,23 +141,6 @@ class Dataset():
         shuffled_x, shuffled_y = self.shuffle(x, y)
 
         return shuffled_x, shuffled_y
-
-    def augment_training(self):
-        print('Augmenting training dataset')
-        print('Current size: {} images and {} labels.'.format(len(self.x_train), len(self.y_train)))
-        augmented_x_train = np.zeros(self.x_train.shape)
-
-        for index, image in enumerate(self.x_train):
-            child, father, mother = image[:,:,0], image[:,:,1], image[:,:,2]
-
-            augmented_x_train[index] = augment_img(child, father, mother, control=False)
-
-        self.x_train = np.vstack(( self.x_train, augmented_x_train )) 
-        self.y_train = np.concatenate(( self.y_train, self.y_train ))
-
-        assert len(self.x_train) == len(self.y_train), 'Lengths of images and labels do not match. Images: {}, labels: {}'.format(len(self.x_train), len(self.y_train))
-
-        print('After augmentation: {} images and {} labels.'.format(len(self.x_train), len(self.y_train)))
 
     @staticmethod
     def shuffle(x, y):

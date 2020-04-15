@@ -129,21 +129,16 @@ class SingleVariant():
         # Check if position in visual range
         if genomic_position in self.target_range:# and self.variant_class != VariantClassValue.deletion and cigar_value != 2:
             visualize_quality = True
-        # elif genomic_position in self.target_range and self.variant_class == VariantClassValue.deletion and cigar_value == 2:
-        #     visualize_quality = True
-        # elif genomic_position in self.target_range and self.variant_class == VariantClassValue.deletion:
-        #     visualize_quality = False
+
         # Handle SNPs
         if cigar_value == 0:
             if base != reference_base:
                 visualize_quality = True
-        if cigar_value == 1 or cigar_value == 2:
+        # Handle Insertions and Deletions
+        elif cigar_value == 1 or cigar_value == 2:
             visualize_quality = True
-        # Handle Insertions
-        # Try displaying deletions
-        elif cigar_value == 1:
-            visualize_quality = True
-
+        
+        # Visualize central region
         if visualize_quality:
             self.quality_encoded[pileup_coordinates] = base_quality * mapq // 10
         # Visualize non central region
@@ -158,7 +153,7 @@ class SingleVariant():
             
             if read_counter >= IMAGE_HEIGHT:
                 break
-            # print('READ NUMBER {}'.format(read_counter))
+
             # Get read information
             cigar = read.cigar
             seq = read.seq
@@ -175,7 +170,6 @@ class SingleVariant():
             genomic_position_counter = 0
             base_counter = 0
             base_position_index = 0
-            # cigar_position_index = 0
             quality_position_index = 0
 
             cigar_seq = []
@@ -193,28 +187,19 @@ class SingleVariant():
                 base_position_index += read.reference_start - self.region_start - 1
                 genomic_position_counter += read.reference_start - self.region_start - 1
                 genomic_position += read.reference_start - self.region_start - 1
-                # cigar_position_index += read.reference_start - self.region_start - 1
                 quality_position_index += read.reference_start - self.region_start - 1
-
-            # if read_counter == 3:
-            #     print(cigar, read_counter)
             
             for cigar_pair in cigar:
                 
-                # cigar_seq = ''
                 cigar_value, base_number = cigar_pair
                 assert cigar_value in [0, 1, 2, 4, 5], 'Unsupported cigar value: {}'.format(cigar_value)
 
                 for cigar_base_index in range(base_number):
-                    # if read_counter == 3:
-                    #     print('self.region_start',self.region_start,'read.reference_start',read.reference_start,'cigar_value', cigar_value, 'base_counter',base_counter,'genomic_position',genomic_position,'genomic_position_counter', genomic_position_counter, self.target_range,pileup_coordinates, 'coordinates', pileup_coordinates)
 
                     if self.region_start >= genomic_position:
-                        # if self.region_start >= read.reference_start + base_counter:
                         if cigar_value != 2 and cigar_value != 5:
                             base_counter += 1
 
-                        # if self.region_start >= genomic_position:
                         if cigar_value == 0 or cigar_value == 2 or cigar_value == 4:
                             genomic_position += 1
 
@@ -223,25 +208,16 @@ class SingleVariant():
                     if self.region_end == read.reference_start + base_counter:
                         break
                     
-                    # if read_counter == 3:
-                    #     print('loop out')
-                    
                     pileup_coordinates = (read_counter, base_position_index)
-                    # cigar_value = cigar_seq[base_counter]
-                    
-                    #and genomic_position >= self.region_start
+
                     if cigar_value in [0, 1, 2] and read_counter < IMAGE_HEIGHT and base_counter < len(seq) and genomic_position_counter < len(self.region_reference_sequence):
                         
                         base = seq[base_counter]
                         base_quality = query_qualities[base_counter]
 
-                        # print(base_position_index, base_counter, base)
-
                         assert cigar_value in [0, 1, 2], 'Unsupported cigar value: {}'.format(cigar_value)
 
                         if base_position_index < PLACEHOLDER_WIDTH:
-                            # if read_counter == 3:
-                            #     print('pass',base)
                             self.encode_base(base, cigar_value, pileup_coordinates)
                             self.encode_quality(genomic_position_counter, base, cigar_value, pileup_coordinates, base_counter, base_quality, mapq)
 
@@ -251,9 +227,7 @@ class SingleVariant():
                         genomic_position_counter += 1
                     elif cigar_value == 1:
                         base_counter += 1
-                        
                     elif cigar_value == 2:
-                        # print('deletion',base, genomic_position_counter, self.region_start + genomic_position_counter + 1)
                         genomic_position_counter += 1    
                         genomic_position += 1               
                     elif cigar_value == 4:
@@ -287,13 +261,6 @@ class TrioVariant():
 
         self.vstacked_pileup_encoded = np.vstack((self.child_variant.pileup_encoded, self.father_variant.pileup_encoded, self.mother_variant.pileup_encoded))
         self.vstacked_quality_encoded = np.vstack((self.child_variant.quality_encoded, self.father_variant.quality_encoded, self.mother_variant.quality_encoded))
-
-        # Create placeholders for arrays corrected for insertions
-        # self.vstacked_pileup_encoded_insertions = self.vstacked_pileup_encoded.copy()
-        # self.vstacked_quality_encoded_insertions = self.vstacked_pileup_encoded.copy()
-
-        # # Encode insertions
-        # self.vstacked_pileup_encoded, self.vstacked_quality_encoded = self.encode_insertions(self.vstacked_pileup_encoded, self.vstacked_quality_encoded)
 
         # Create encoded arrays with insertions for child, father and mother
         self.child_pileup_encoded_insertions = self.vstacked_pileup_encoded[:IMAGE_HEIGHT]
@@ -358,54 +325,7 @@ class TrioVariant():
         
         return vstacked_pileup_encoded, vstacked_quality_encoded
 
-        
-            # Check if one of insertion values are in column
-            # if (baseEncoder.IN_A in column) or (baseEncoder.IN_C in column) or (baseEncoder.IN_T in column) or (baseEncoder.IN_G in column):
-
-            #     # Insert empty column in pileup
-            #     left_array_pileup = self.vstacked_pileup_encoded[:,:column_index]
-            #     middle_array_pileup = np.zeros((len(self.vstacked_pileup_encoded),1))
-            #     right_array_pileup = self.vstacked_pileup_encoded[:,column_index:]
-
-            #     self.vstacked_pileup_encoded_insertions = np.hstack((left_array_pileup, middle_array_pileup, right_array_pileup))
-
-            #     # Insert empty column in quality
-            #     left_array_quality = self.vstacked_quality_encoded[:,:column_index]
-            #     middle_array_quality = np.zeros((len(self.vstacked_quality_encoded),1))
-            #     right_array_quality = self.vstacked_quality_encoded[:,column_index:]
-
-            #     self.vstacked_quality_encoded_insertions = np.hstack((left_array_quality, middle_array_quality, right_array_quality))
-
-            #     # Iterate through new array and move non inserted values
-            #     for row_index, base in enumerate(column):
-            #         if (base != baseEncoder.IN_A) and (base != baseEncoder.IN_C) and (base != baseEncoder.IN_T) and (base != baseEncoder.IN_G) and column_index < PLACEHOLDER_WIDTH:
-            #             # Correct in pileup
-            #             self.vstacked_pileup_encoded_insertions[row_index, column_index] = base
-            #             self.vstacked_pileup_encoded_insertions[row_index, column_index-1] = baseEncoder.EMPTY
-            #             self.vstacked_pileup_encoded_insertions[row_index, column_index:] = self.vstacked_pileup_encoded_insertions[row_index, column_index-1:-1]
-
-            #             # Correct in quality
-            #             quality = self.vstacked_quality_encoded[row_index, column_index]
-            #             self.vstacked_quality_encoded_insertions[row_index, column_index] = quality
-            #             self.vstacked_quality_encoded_insertions[row_index, column_index-1] = 0
-            #             self.vstacked_quality_encoded_insertions[row_index, column_index:] = self.vstacked_quality_encoded_insertions[row_index, column_index-1:-1]                 
-
-            #     left_array_pileup = self.vstacked_pileup_encoded_insertions[:,:column_index]
-            #     right_array_pileup = self.vstacked_pileup_encoded_insertions[:,column_index+1:]
-            #     self.vstacked_pileup_encoded_insertions = np.hstack((left_array_pileup, right_array_pileup))
-
-            #     # To-Do Add assert statements to check that dimensions are same
-            #     self.vstacked_pileup_encoded = self.vstacked_pileup_encoded_insertions
-
-            #     left_array_quality = self.vstacked_quality_encoded_insertions[:,:column_index]
-            #     right_array_quality = self.vstacked_quality_encoded_insertions[:,column_index+1:]
-            #     self.vstacked_quality_encoded_insertions = np.hstack((left_array_quality, right_array_quality))
-
-            #     # To-Do Add assert statements to check that dimensions are same
-            #     self.vstacked_quality_encoded = self.vstacked_quality_encoded_insertions
-
     def create_singleton_variant_image(self, variant_pileup, variant_quality):
-        # print(variant_pileup.shape)
         variant_image = np.zeros((IMAGE_HEIGHT, IMAGE_WIDTH))
 
         for row_index, row in enumerate(variant_pileup):
@@ -439,9 +359,6 @@ class TrioVariant():
         image[:,:,0] = self.child_variant_image
         image[:,:,1] = self.father_variant_image
         image[:,:,2] = self.mother_variant_image
-
-        # Normalize image
-        # normalized_image = self.normalize_image(image)
 
         return image
 

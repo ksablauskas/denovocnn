@@ -1,4 +1,4 @@
-from denovonet.settings import PRODUCTION_SNP_MODEL_PATH, PRODUCTION_INSERTION_MODEL_PATH, PRODUCTION_DELETION_MODEL_PATH, MINIMAL_COVERAGE
+from denovonet.settings import MINIMAL_COVERAGE
 from denovonet.utils import get_variant_location
 from denovonet.encoders import VariantClassValue, VariantInheritance
 from denovonet.variants import SingleVariant, TrioVariant
@@ -28,7 +28,6 @@ def get_variant_class(reference, alternate):
             return VariantClassValue.insertion
         else:
             return VariantClassValue.unknown
-            # raise TypeError('Unknown Variant Class. Reference: {} . Alternate {}'.format(reference, alternate))
 
 def get_end_coordinate(reference, start):
     return str( int(start) + len(reference) - 1 )
@@ -88,15 +87,15 @@ def split_comma_separated_variants(intersected_dataframe):
 
     return splitted_intersected_array
 
-def infer_dnms_from_intersected(intersected_variants_tsv, child_bam, father_bam, mother_bam, REREFERENCE_GENOME):
+def infer_dnms_from_intersected(intersected_variants_tsv, child_bam, father_bam, mother_bam, REREFERENCE_GENOME, snp_model, in_model, del_model):
 
-    print('SNP model',PRODUCTION_SNP_MODEL_PATH)
-    print('Insertion model',PRODUCTION_INSERTION_MODEL_PATH)
-    print('Deletion model',PRODUCTION_DELETION_MODEL_PATH)
+    print('SNP model',snp_model)
+    print('Insertion model',in_model)
+    print('Deletion model',del_model)
 
-    model_snps = load_model(PRODUCTION_SNP_MODEL_PATH)
-    model_insertions = load_model(PRODUCTION_INSERTION_MODEL_PATH)
-    model_deletions = load_model(PRODUCTION_DELETION_MODEL_PATH)
+    model_snps = load_model(snp_model)
+    model_insertions = load_model(in_model)
+    model_deletions = load_model(del_model)
 
     dnms_table = []
     start_time = time.time()
@@ -122,14 +121,9 @@ def infer_dnms_from_intersected(intersected_variants_tsv, child_bam, father_bam,
         end = get_end_coordinate(reference, start)
 
         if variant_class == VariantClassValue.deletion or variant_class == VariantClassValue.insertion:
-            # start = str(int(start) + 1)
-            # end = str(int(end) + 1)
             if variant_class == VariantClassValue.insertion:
                 end = str(int(end) + 1)
 
-            # Used this with intersected. But cleaning intersected should fix this
-            # reference = reference[1:]
-            # alternate = alternate[1:]
         
         loc = get_variant_location(chromosome, start, end)
 
@@ -153,20 +147,14 @@ def infer_dnms_from_intersected(intersected_variants_tsv, child_bam, father_bam,
 
             trio_variant = TrioVariant(child_variant, father_variant, mother_variant)
 
-            # trio_variant.display_image(trio_variant.image)
-            # trio_variant.save_image('image{}.jpg'.format(counter), trio_variant.image)
-
             if variant_class == VariantClassValue.snp:
                 prediction = trio_variant.predict(model_snps)
-            # elif variant_class == VariantClassValue.deletion or variant_class == VariantClassValue.insertion:
-            #     prediction = trio_variant.predict(model_indels)
             elif variant_class == VariantClassValue.deletion:
                 prediction = trio_variant.predict(model_deletions)
             elif variant_class == VariantClassValue.insertion:
                 prediction = trio_variant.predict(model_insertions)
             else:
                 prediction_dnm = np.array([-2,-2])
-                #raise TypeError('Unknown Variant Class. Reference: {} . Alternate {}'.format(reference, alternate))
             
             argmax = np.argmax(prediction, axis=1)
 
@@ -174,14 +162,6 @@ def infer_dnms_from_intersected(intersected_variants_tsv, child_bam, father_bam,
 
             dnms_table_row = [chromosome, start, end, reference, alternate, float(prediction_dnm), mean_start_coverage]
             dnms_table.append(dnms_table_row)
-
-            # if counter >= 20:
-            #     print('END')
-            #     t = t + 1
-            #     break
-
-    # elapsed = round((time.time() - start_time), 0)
-    # print('Total of variants evaluated: {} . Time elapsed: {}s'.format(counter, str(elapsed)))
 
     K.clear_session()
 

@@ -30,6 +30,11 @@ parser.add_argument('--mother-bam', dest='mother_bam', default=None, type=str, h
 
 parser.add_argument('--intersected', default='intersected.txt', type=str, help='Path to intersected file.')
 
+# Prediction models
+parser.add_argument('--snp-model', dest='snp_model', default=None, type=str, help='Path to SNP model.')
+parser.add_argument('--in-model', dest='in_model', default=None, type=str, help='Path to insertion model.')
+parser.add_argument('--del-model', dest='del_model', default=None, type=str, help='Path to deletion model.')
+
 parser.add_argument('--output', default='output.txt', type=str, help='Path to output file.')
 args = parser.parse_args()
 
@@ -84,10 +89,14 @@ if __name__ == "__main__":
         father_bam = args.father_bam
         mother_bam = args.mother_bam
 
+        snp_model = args.snp_model
+        in_model = args.in_model
+        del_model = args.del_model
+
         path_to_tsv = args.intersected
         output_path = args.output
 
-        dnms_table = infer_dnms_from_intersected(path_to_tsv, child_bam, father_bam, mother_bam, REREFERENCE_GENOME)
+        dnms_table = infer_dnms_from_intersected(path_to_tsv, child_bam, father_bam, mother_bam, REREFERENCE_GENOME, snp_model, in_model, del_model)
 
         dnms_table.to_csv(output_path, sep='\t',index=False)
 

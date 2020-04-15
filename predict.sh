@@ -10,6 +10,9 @@ if [[ ("$1" == "-h") || ("$1" == "--help") ]]; then
   echo "    -cb,--child-bam : Path to child bam file."
   echo "    -fb,--father-bam : Path to father bam file."
   echo "    -mb,--mother-bam : Path to mother bam file."
+  echo "    -sm,--snp-model : Path to SNP model."
+  echo "    -im,--in-model : Path to insertion model."
+  echo "    -dm,--del-model : Path to deletion model."
   echo "    -g,--genome : Path to genome fasta file."
   echo "    -o,--output : Output file name (will be saved to workdir)."
   exit 0
@@ -43,8 +46,20 @@ case $i in
     FATHER_BAM="${i#*=}"
     shift
     ;;
-    -fb=*|--mother-bam=*)
+    -mb=*|--mother-bam=*)
     MOTHER_BAM="${i#*=}"
+    shift
+    ;;
+    -sm=*|--snp-model=*)
+    SNP_MODEL="${i#*=}"
+    shift
+    ;;
+    -im=*|--in-model=*)
+    IN_MODEL="${i#*=}"
+    shift
+    ;;
+    -dm=*|--del-model=*)
+    DEL_MODEL="${i#*=}"
     shift
     ;;
     -g=*|--genome=*)
@@ -94,6 +109,20 @@ if [[ ${MOTHER_BAM} = "" ]]; then
     exit
 fi
 
+# MODELS
+if [[ ${SNP_MODEL} = "" ]]; then
+    echo "Error: Path to SNP model --snp-model must be provided!"
+    exit
+fi
+if [[ ${IN_MODEL} = "" ]]; then
+    echo "Error: Path to insertion model --in-model must be provided!"
+    exit
+fi
+if [[ ${DEL_MODEL} = "" ]]; then
+    echo "Error: Path to deletion model --del-model must be provided!"
+    exit
+fi
+
 
 if [[ ${GENOME} = "" ]]; then
     echo "Error: GENOME --genome must be provided!"
@@ -108,27 +137,45 @@ fi
 # Create intersected file
 mkdir $WORKDIR
 
-cp $CHILD_VCF $WORKDIR/child.vcf
-bgzip $WORKDIR/child.vcf
-tabix  -p vcf $WORKDIR/child.vcf.gz
+if [ $CHILD_VCF =  *"gz" ]; then
+    cp $CHILD_VCF $WORKDIR/child.vcf.gz
+else
+    cp $CHILD_VCF $WORKDIR/child.vcf
+    bgzip $WORKDIR/child.vcf
+fi
+BGZIPPED_CHILD_VCF=$WORKDIR/child.vcf.gz
+tabix  -p vcf $BGZIPPED_CHILD_VCF
 
-cp $FATHER_VCF $WORKDIR/father.vcf
-bgzip $WORKDIR/father.vcf
-tabix  -p vcf $WORKDIR/father.vcf.gz
+if [ $FATHER_VCF =  *"gz" ]; then
+    cp $FATHER_VCF $WORKDIR/father.vcf.gz
+else
+    cp $FATHER_VCF $WORKDIR/father.vcf
+    bgzip $WORKDIR/father.vcf
+fi
+BGZIPPED_FATHER_VCF=$WORKDIR/father.vcf.gz
+tabix  -p vcf $BGZIPPED_FATHER_VCF
 
-cp $MOTHER_VCF $WORKDIR/mother.vcf
-bgzip $WORKDIR/mother.vcf
-tabix  -p vcf $WORKDIR/mother.vcf.gz
+if [ $MOTHER_VCF =  *"gz" ]; then
+    cp $MOTHER_VCF $WORKDIR/mother.vcf.gz
+else
+    cp $MOTHER_VCF $WORKDIR/mother.vcf
+    bgzip $WORKDIR/mother.vcf
+fi
+BGZIPPED_MOTHER_VCF=$WORKDIR/mother.vcf.gz
+tabix  -p vcf $BGZIPPED_MOTHER_VCF
 
-bcftools isec -C $WORKDIR/child.vcf.gz $WORKDIR/father.vcf.gz $WORKDIR/mother.vcf.gz > $WORKDIR/intersected.txt
+bcftools isec -C $BGZIPPED_CHILD_VCF $BGZIPPED_FATHER_VCF $BGZIPPED_MOTHER_VCF > $WORKDIR/intersected.txt
 
-# Run P ython command
+# Run Python command
 KERAS_BACKEND=tensorflow python ./main.py \
 --mode=predict \
 --genome=$GENOME \
 --child-bam=$CHILD_BAM \
 --father-bam=$FATHER_BAM \
 --mother-bam=$MOTHER_BAM \
+--snp-model=$SNP_MODEL \
+--in-model=$IN_MODEL \
+--del-model=$DEL_MODEL \
 --intersected=$WORKDIR/intersected.txt \
 --output=$WORKDIR/$OUTPUT
 

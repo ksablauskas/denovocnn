@@ -411,25 +411,17 @@ def train(EPOCHS, IMAGES_FOLDER, DATASET_NAME, output_model_path, continue_train
         train_folder,
         target_size=(IMAGE_HEIGHT, IMAGE_WIDTH),
         batch_size=BATCH_SIZE,
-        class_mode='categorical')
+        class_mode='binary')
 
     validation_generator = test_datagen.flow_from_directory(
             val_folder,
             target_size=(IMAGE_HEIGHT, IMAGE_WIDTH),
             batch_size=BATCH_SIZE,
-            class_mode='categorical')
+            class_mode='binary')
 
-    model.compile(loss=keras.losses.categorical_crossentropy ,
+    model.compile(loss=keras.losses.binary_crossentropy ,
                 optimizer=adad,
                 metrics=['accuracy'])
-
-    # model.fit(x_train, y_train,
-    #         batch_size=batch_size,
-    #         epochs=epochs,
-    #         verbose=1,
-    #         callbacks=callbacks_list,
-    #         validation_data=(x_val, y_val)
-    #         )
 
     model.fit_generator(
         train_generator,

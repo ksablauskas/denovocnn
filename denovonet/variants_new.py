@@ -51,6 +51,15 @@ class SingleVariant():
 
         # Run encode
         self.encode_pileup()
+        
+    # Variant region
+    @property
+    def region_start(self):
+        return self.start - OVERHANG - 2
+    
+    @property
+    def region_end(self):
+        return self.start + OVERHANG - 2
 
     @property
     def region_reference_sequence(self):

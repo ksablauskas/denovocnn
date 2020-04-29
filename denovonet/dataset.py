@@ -206,3 +206,75 @@ class Dataset():
 
             cv2.imwrite(output_path,reordered_placeholder)
             print('Saved {} as {}'.format(filename,output_path))
+            
+            
+class CustomAugmentation(object):
+    """ Defines a custom augmentation class. Randomly applies one of transformations."""
+        
+    def __init__(self, probability=0.9, reads_cropping = False, reads_shuffling = False, seed=None):
+        self.probability = probability
+        self.reads_cropping = reads_cropping
+        self.reads_shuffling = reads_shuffling
+        self.transformations = []
+        
+        if seed:
+            np.random.seed(seed)
+
+    def _check_augmentations(self):
+        self.transformations = []
+
+        if self.reads_cropping:
+            self.transformations.append(self._reads_cropping)
+        if self.reads_shuffling:
+            self.transformations.append(self._reads_shuffling)
+
+    @staticmethod
+    def _reads_cropping(img):
+        new_img = img.copy()
+
+        nreads_c, nreads_f, nreads_m = tuple(np.sum(np.sum(new_img, axis=1) > 0., axis=0))
+
+        n_reads_c = max(5, nreads_c) 
+        n_reads_f = max(5, nreads_f) 
+        n_reads_m = max(5, nreads_m)
+
+        nreads_c = np.random.choice(np.arange(5, nreads_c + 1))
+        nreads_f = np.random.choice(np.arange(5, nreads_f + 1))
+        nreads_m = np.random.choice(np.arange(5, nreads_m + 1))
+
+        new_img[nreads_c:, :, 0] = 0.
+        new_img[nreads_f:, :, 1] = 0.
+        new_img[nreads_m:, :, 2] = 0.
+
+        return new_img
+
+    @staticmethod
+    def _reads_shuffling(img):
+        new_img = img.copy()
+
+        nreads_c, nreads_f, nreads_m = tuple(np.sum(np.sum(new_img, axis=1) > 0., axis=0))
+        print (nreads_c, nreads_f, nreads_m)
+
+        np.random.shuffle(new_img[:nreads_c, :, 0])
+        np.random.shuffle(new_img[:nreads_f, :, 1])
+        np.random.shuffle(new_img[:nreads_m, :, 2])
+        
+        return new_img
+
+    def __call__(self, img):
+
+        if img.shape[2] != 3:
+            print (img.shape)
+            raise Exception("Wrong image format!")
+        
+        random_number = np.random.random()
+                
+        if random_number > self.probability:
+            pass
+        else:
+            self._check_augmentations()
+            transformation = np.random.choice(self.transformations)
+
+            return transformation(img)
+                
+        return img

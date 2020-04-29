@@ -24,6 +24,7 @@ from denovonet.settings import TRAINING_X, TRAINING_Y, VALIDATION_X, VALIDATION_
 from denovonet.settings import IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS
 
 from denovonet.variants import TrioVariant
+from denovonet.dataset import CustomAugmentation
 
 num_classes = NUMBER_CLASSES
 
@@ -391,7 +392,13 @@ def train(EPOCHS, IMAGES_FOLDER, DATASET_NAME, output_model_path, continue_train
                               mode='auto')
 
     callbacks_list = [lrate, early_stopping]
-
+    
+    custom_augmentation = CustomAugmentation(
+        probability=0.5, 
+        reads_cropping = True, 
+        reads_shuffling = True
+    )
+    
     train_datagen = ImageDataGenerator(
         rescale=1./255,
         # shear_range=0.2,
@@ -400,7 +407,8 @@ def train(EPOCHS, IMAGES_FOLDER, DATASET_NAME, output_model_path, continue_train
         width_shift_range=0.2,
         height_shift_range=0.2,
         # rotation_range=10,
-        horizontal_flip=True
+        horizontal_flip=True,
+        preprocessing_function=custom_augmentation
     )
 
     test_datagen = ImageDataGenerator(

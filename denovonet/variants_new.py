@@ -110,10 +110,6 @@ class SingleVariant():
         pileup = np.zeros((PLACEHOLDER_WIDTH, ))
         quality = np.zeros((PLACEHOLDER_WIDTH, ))
 
-        # skip bad reads
-        if self._cigar[0][0] in (4, 5):
-            return pileup, quality
-
         # get reference genome for read
         self._ref = self.REFERENCE_GENOME.fetch(self.chromosome, self._read.reference_start, self._read.reference_start + 2*len(read.seq))
         
@@ -134,6 +130,10 @@ class SingleVariant():
         # pointers to picture position
         picture_start_position = 0 + offset_picture
         picture_end_position = 0 + offset_picture
+        
+        # skip bad reads
+        if not self._cigar or self._cigar[0][0] in (4, 5) or offset_picture > PLACEHOLDER_WIDTH:
+            return pileup, quality
 
         #iterate over all cigar pairs
         for iter_num, (cigar_value, cigar_num) in enumerate(self._cigar):

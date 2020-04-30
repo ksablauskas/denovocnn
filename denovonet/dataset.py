@@ -234,9 +234,9 @@ class CustomAugmentation(object):
 
         nreads_c, nreads_f, nreads_m = tuple(np.sum(np.sum(new_img, axis=1) > 0., axis=0))
 
-        n_reads_c = max(5, nreads_c) 
-        n_reads_f = max(5, nreads_f) 
-        n_reads_m = max(5, nreads_m)
+        nreads_c = max(5, nreads_c) 
+        nreads_f = max(5, nreads_f) 
+        nreads_m = max(5, nreads_m)
 
         nreads_c = np.random.choice(np.arange(5, nreads_c + 1))
         nreads_f = np.random.choice(np.arange(5, nreads_f + 1))

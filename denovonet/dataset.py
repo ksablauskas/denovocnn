@@ -253,7 +253,6 @@ class CustomAugmentation(object):
         new_img = img.copy()
 
         nreads_c, nreads_f, nreads_m = tuple(np.sum(np.sum(new_img, axis=1) > 0., axis=0))
-        print (nreads_c, nreads_f, nreads_m)
 
         np.random.shuffle(new_img[:nreads_c, :, 0])
         np.random.shuffle(new_img[:nreads_f, :, 1])

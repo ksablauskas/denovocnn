@@ -401,12 +401,9 @@ def train(EPOCHS, IMAGES_FOLDER, DATASET_NAME, output_model_path, continue_train
     
     train_datagen = ImageDataGenerator(
         rescale=1./255,
-        # shear_range=0.2,
         zoom_range=0.2,
-        # zca_whitening=True,
         width_shift_range=0.2,
         height_shift_range=0.2,
-        # rotation_range=10,
         horizontal_flip=True,
         preprocessing_function=custom_augmentation
     )
@@ -419,28 +416,25 @@ def train(EPOCHS, IMAGES_FOLDER, DATASET_NAME, output_model_path, continue_train
         train_folder,
         target_size=(IMAGE_HEIGHT, IMAGE_WIDTH),
         batch_size=BATCH_SIZE,
-        class_mode='binary')
+        class_mode='categorical')
 
     validation_generator = test_datagen.flow_from_directory(
             val_folder,
             target_size=(IMAGE_HEIGHT, IMAGE_WIDTH),
             batch_size=BATCH_SIZE,
-            class_mode='binary')
+            class_mode='categorical')
 
-    model.compile(loss=keras.losses.binary_crossentropy ,
+    model.compile(loss=keras.losses.categorical_crossentropy ,
                 optimizer=adad,
                 metrics=['accuracy'])
 
     model.fit_generator(
         train_generator,
-        # steps_per_epoch=180, #snps
-        # steps_per_epoch=10, #insertions
-        steps_per_epoch=train_steps, #deletions
+        steps_per_epoch=train_steps,
         epochs=EPOCHS,
         validation_data=validation_generator,
-        # validation_steps=3 #insertions
-        # validation_steps=45 #snps
-        validation_steps=val_steps #deletions
+        validation_steps=val_steps,
+        callbacks=callbacks_list,
     )
 
     model.save(output_model_path)

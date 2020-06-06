@@ -37,6 +37,7 @@ def squeeze_excite_block2D(filters,inputs):                       # squeeze and 
     return se
 
 def advanced_cnn(input_shape, num_classes):
+    # Based on https://github.com/Matuzas77/MNIST-0.17/blob/master/MNIST_final_solution.ipynb
     s = Input(shape=input_shape) 
     x = Conv2D(128,(3,3),activation='relu',padding='same')(s)
     x = Conv2D(128,(3,3),activation='relu',padding='same')(x)

@@ -1,6 +1,16 @@
 # denovoCNN
 
-A deep learning approach to calling de novo mutations (DNMs).
+A deep learning approach to call de novo mutations (DNMs) on whole-exome (WES) and whole-genome sequencing (WGS) data. denovoCNN uses trio BAM + VCF files to generate image-like genomic sequence representations and detect DNMs with high accuracy.<br>
+denovoCNN is a combination of three models for the calling of substitution, deletion and insertion DNMs. It is trained on ~16k manually curated DNM and non-DNM variant sequencing data, generated using [Illumina](https://www.illumina.com/) sequencer and [Sureselect Human
+All Exon V5](https://www.agilent.com/cs/library/datasheets/public/AllExondatasheet-5990-9857EN.pdf) capture kit. Based on the current dataset size, denovoCNN uses vanilla CNN model in order to allow training and inference without requiring a GPU. More advanced models using squeeze-excitation blocks is currently in validation.<br>
+denovCNN uses recallibrated BAM + VCF files and returns a tab-separated file with chromosome | start | end | reference | ref | var | DNM posterior probability | mean coverage | . A good value for filtering  is 0.85.
+
+## How does it work?
+denovoCNN reads BAM files and iterates through potential DNM locations using the input VCF files to generate snapshots of genomic regions. It stacks trio BAM files to generate and RGB image representation and uses a convolutional neural network to classify each image as either DNM or non-DNM.<br>
+Images are similar to the one that you see below. Each color represents different trio individuals: red - child; green - father; blue - mother. In the example you can see a clear red signal (child reads) in the central position which in this case is a de novo deletion.<br>
+
+
+<img src="data/del_dnm.png" alt="drawing" width="420px" height="420px"/>
 
 ## Requirements
 
@@ -17,7 +27,7 @@ Pillow 5.2.0
 Opencv 3.4.2 
 
 ## Installation
-Recommended way of installing is creating an [Anaconda](https://www.anaconda.com/) environment.
+Easiest way of installing is creating an [Anaconda](https://www.anaconda.com/) environment. Dockerized version coming up.
 
 ```bash
 #Create environment 
@@ -69,6 +79,14 @@ KERAS_BACKEND=tensorflow python main.py \
 ```
 
 ### Prediction
+To use the pretrained models, you can download them separately:
+- [Substitution model](https://drive.google.com/file/d/1v_Z11wpW5WUEauS8M638ZPJaI3qRlq3a/view?usp=sharing)
+- [Deletion model](https://drive.google.com/file/d/1efyy7mpcARbOkzAkup0fyMf_FxQG7sYM/view?usp=sharing)
+- [Insertion model](https://drive.google.com/file/d/1hoI9BIIOoXFSkYoYeradCO5ZDYlWzgRU/view?usp=sharing)
+
+<b>Important: denovoCNN expects recallibrated BAM files using BQSR, more [here](https://gatk.broadinstitute.org/hc/en-us/articles/360035890531-Base-Quality-Score-Recalibration-BQSR-).</b> VCF files can be generated using your preffered variant caller.<br>
+*If you're running denovoCNN on WGS data, it is recommended to split the VCF files into 10 or more parts and run each of them separately.
+
 
 ```bash
 ./predict.sh \
@@ -83,7 +101,7 @@ KERAS_BACKEND=tensorflow python main.py \
 -im <INSERTION_MODEL> \
 -dm <DELETION_MODEL> \
 -g <REFERENCE_GENOME> \
--o <OUTPUT_FILE_NAME> \
+-o <OUTPUT_FILE_NAME>
 ```
 OR
 ```bash

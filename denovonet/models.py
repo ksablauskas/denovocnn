@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 import keras
 from keras.models import Sequential, Model
-from keras.layers import Dense, Dropout, Flatten, Activation, BatchNormalization
-from keras.layers import Conv2D, MaxPooling2D
+from keras.layers import Dense, Dropout, Flatten, Activation, BatchNormalization, concatenate
+from keras.layers import Conv2D, MaxPooling2D, GlobalAveragePooling2D, GlobalMaxPooling2D, Reshape, multiply, AveragePooling2D
 from keras import backend as K
 from keras.preprocessing.image import ImageDataGenerator
 
@@ -15,7 +15,7 @@ from keras.layers import AveragePooling2D, Input, Flatten
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras.callbacks import ReduceLROnPlateau
-from keras.regularizers import l2
+from keras.regularizers import l2, l1
 
 from keras.models import load_model
 
@@ -27,6 +27,45 @@ from denovonet.variants import TrioVariant
 from denovonet.dataset import CustomAugmentation
 
 num_classes = NUMBER_CLASSES
+
+def squeeze_excite_block2D(filters,inputs):                       # squeeze and exite is a good thing
+    se = GlobalAveragePooling2D()(inputs)
+    se = Reshape((1, filters))(se) 
+    se = Dense(filters//32, activation='relu')(se)
+    se = Dense(filters, activation='sigmoid')(se)
+    se = multiply([inputs, se])
+    return se
+
+def advanced_cnn(input_shape, num_classes):
+    s = Input(shape=input_shape) 
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(s)
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = BatchNormalization()(x)
+    x = squeeze_excite_block2D(128,x)
+
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = BatchNormalization()(x)
+    x = squeeze_excite_block2D(128,x)
+    x = AveragePooling2D(2)(x)
+
+
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = BatchNormalization()(x)
+    x = squeeze_excite_block2D(128,x)
+    x = AveragePooling2D(2)(x)
+
+
+    x = concatenate([GlobalMaxPooling2D()(x),
+        GlobalAveragePooling2D()(x)])
+
+    x = Dense(num_classes,activation='softmax',use_bias=False,
+        kernel_regularizer=l1(0.00025))(x) # this make stacking better
+    return Model(inputs=s, outputs=x)
 
 def cnn(input_shape, num_classes):
     model = Sequential()
@@ -224,6 +263,8 @@ def get_model(model_name, input_shape, num_classes):
         model = cnn(input_shape, num_classes)
     elif model_name == 'resnet_v2':
         model = resnet_v2(input_shape, depth, num_classes)
+    elif model_name == 'advanced_cnn':
+        model = advanced_cnn(input_shape, num_classes)
     else:
         raise Exception('NameError','Unknown model name')
 
@@ -377,7 +418,7 @@ def train(EPOCHS, IMAGES_FOLDER, DATASET_NAME, output_model_path, continue_train
         model = load_model(input_model_path)
     else:
         model = get_model(MODEL_ARCHITECTURE, input_shape, NUMBER_CLASSES)
-
+    model.summary()
     adad = keras.optimizers.Adadelta()
 
     
@@ -391,7 +432,7 @@ def train(EPOCHS, IMAGES_FOLDER, DATASET_NAME, output_model_path, continue_train
                               verbose=1,
                               mode='auto')
 
-    callbacks_list = [lrate, early_stopping]
+    callbacks_list = [lrate]#, early_stopping]
     
     custom_augmentation = CustomAugmentation(
         probability=0.5, 

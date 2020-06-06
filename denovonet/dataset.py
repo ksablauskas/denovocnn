@@ -32,7 +32,19 @@ class Dataset():
 
         # Load data
         self.variants_dataframe = pd.read_csv(self.variants_path, sep='\t')
-        self.variants_dataframe = self.variants_dataframe[['Child','Father','Mother','Chromosome','Start position','End position','De novo assessment','Reference','Variant']]
+        self.variants_dataframe = self.variants_dataframe[['Child',
+            'Father',
+            'Mother',
+            'Chromosome',
+            'Start position',
+            'End position',
+            'De novo assessment',
+            'Reference',
+            'Variant',
+            'Child_BAM',
+            'Father_BAM',
+            'Mother_BAM'
+        ]]
         self.variants_array = np.array(self.variants_dataframe)
         # self.variants_array = self.variants_array[:30]
 
@@ -40,22 +52,6 @@ class Dataset():
         self.number_variants = len(self.variants_array)
 
         self.x, self.y = self.populate(self.variants_dataframe)
-        # self.number_cases = self.get_number_of_cases()
-        # self.split_index = self.get_split_index()
-
-        # # Split into training / validation cohorts
-        # self.training_ids, self.validation_ids = self.get_training_validation_ids()
-
-        # self.training_dataframe = self.variants_dataframe.loc[self.variants_dataframe['Child'].isin(self.training_ids)]
-        # self.validation_dataframe = self.variants_dataframe.loc[self.variants_dataframe['Child'].isin(self.validation_ids)]
-
-        # # Report
-        # self.unique_train = len(self.get_unique_ids(self.training_dataframe))
-        # self.unique_val = len(self.get_unique_ids(self.validation_dataframe))
-
-        # # Populate
-        # self.x_train, self.y_train = self.populate(self.training_dataframe)
-        # self.x_val, self.y_val = self.populate(self.validation_dataframe)
 
     def get_unique_ids(self, dataframe):
         unique_ids = dataframe.Child.unique()
@@ -121,12 +117,13 @@ class Dataset():
             child_id, father_id, mother_id = row[0], row[1], row[2]
             chromosome, start, end = row[3], row[4], row[5]
             assessment, reference_allele, variant_allele = row[6], row[7], row[8]
+            # Get bam paths
+            child_bam, father_bam, mother_bam = row[9], row[10], row[11]
 
             # Adjust end coordinates for pysam
             end += 1
 
-            # Get bam paths
-            child_bam, father_bam, mother_bam = get_rumc_bam_path(child_id), get_rumc_bam_path(father_id), get_rumc_bam_path(mother_id)
+            #  = get_rumc_bam_path(child_id), get_rumc_bam_path(father_id), get_rumc_bam_path(mother_id)
 
             # Get image and labels
             image = self.get_image(chromosome, start, end, child_bam, father_bam, mother_bam)

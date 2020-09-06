@@ -12,6 +12,22 @@ Images are similar to the one that you see below. Each color represents differen
 
 <img src="data/del_dnm.png" alt="drawing" width="420px" height="420px"/>
 
+## Performance
+<b><i>Performance on WES data</b></i><br>
+During initial training with 80/20 training/validation split, denovoCNN achieved average validation accuracies of 97.86%, 97.15% and 97.35% with categorical cross-entropy losses of 0.0855, 0.1486, 0.1053 for substitutions, insertions and deletions, respectively.
+
+<img src="data/validation_metrics_denovocnn.png" alt="drawing" width="420px" height="420px"/>
+
+<b><i> Performance on WGS data </b></i><br>
+Although the denovoCNN model was trained on WES data, there is in principle no reason the model would not also work for whole genome sequencing (WGS) data. We applied denovoCNN to 5 WGS trios sequenced to an average of 40x coverage. denovoCNN called a total of 434 DNMs with a mean of 86.8±21.7 DNM calls per trio. All of the DNM calls were inspected in IGV and were classified as either DNMs, uncertain or false positive calls. We selected a random set of 27 potential DNMs identified in coding, intergenic and intragenic regions for validation by Sanger sequencing, and an additional 5 variants that were classified as likely inherited (denovoCNN probability <0.5). DenovoCNN correctly classified all but one variant, which turned out to be FP after Sanger validation. PCR failed for a single variant which was excluded from the analysis.
+
+<img src="data/wgs_performance_denovocnn.png" alt="drawing" width="420px" height="420px"/>
+
+<b><i>Genome in a Bottle data</b></i><br>
+For additional comparisons we decided to use the extensively validated Ashkenazim Trio from the Genome in a Bottle (GIAB) consortium. We compared our results to DeNovoGear, GATK, and to GATK filtered for high confidence DNM calls (GATK_HC). DeNovoCNN scored better on all metrics compared to DeNovoGear. In comparison to GATK and GATK_HC, DeNovoCNN performed significantly better in terms of positive predictive value (a.k.a. precision; all variants: GATK:42.84, GATK_HC:54.47 versus DeNovoCNN:96.68) and specificity (GATK:64.2; GATK_HC:78.0; versus DeNovoCNN:99.13). However, deNovoCNN scored slightly lower in terms of sensitivity (a.k.a. Recall, all variants: GATK:84.88; GATK_HC:83.22 versus DeNovoCNN:80.1).
+
+<img src="data/giab_comparison_denovocnn.png" alt="drawing" width="420px" height="420px"/>
+
 ## Requirements
 
 [Bcftools 1.8](https://samtools.github.io/bcftools/)

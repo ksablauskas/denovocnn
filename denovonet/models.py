@@ -419,7 +419,7 @@ def evaluate(models, IMAGES_FOLDER, DATASET_NAME):
     plt.legend(loc="lower right")
     plt.show()
 
- def evaluate_binary(models, IMAGES_FOLDER, DATASET_NAME):
+def evaluate_binary(models, IMAGES_FOLDER, DATASET_NAME):
     """
     evaluating binary classifier for 'dnm', 'iv' classes
     """

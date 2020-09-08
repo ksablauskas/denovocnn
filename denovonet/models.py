@@ -68,6 +68,40 @@ def advanced_cnn(input_shape, num_classes):
         kernel_regularizer=l1(0.00025))(x) # this make stacking better
     return Model(inputs=s, outputs=x)
 
+def advanced_cnn_binary(input_shape):
+    # Based on https://github.com/Matuzas77/MNIST-0.17/blob/master/MNIST_final_solution.ipynb
+    
+    s = Input(shape=input_shape) 
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(s)
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = BatchNormalization()(x)
+    x = squeeze_excite_block2D(128,x)
+
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = BatchNormalization()(x)
+    x = squeeze_excite_block2D(128,x)
+    x = AveragePooling2D(2)(x)
+
+
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = Conv2D(128,(3,3),activation='relu',padding='same')(x)
+    x = BatchNormalization()(x)
+    x = squeeze_excite_block2D(128,x)
+    x = AveragePooling2D(2)(x)
+
+
+    x = concatenate([GlobalMaxPooling2D()(x),
+        GlobalAveragePooling2D()(x)])
+
+    x = Dense(1, activation='sigmoid',use_bias=False,
+        kernel_regularizer=l1(0.00025))(x)
+    
+    return Model(inputs=s, outputs=x)
+
 def cnn(input_shape, num_classes):
     model = Sequential()
     model.add(Conv2D(32, (3, 3), padding='same',
@@ -266,6 +300,8 @@ def get_model(model_name, input_shape, num_classes):
         model = resnet_v2(input_shape, depth, num_classes)
     elif model_name == 'advanced_cnn':
         model = advanced_cnn(input_shape, num_classes)
+    elif model_name == 'advanced_cnn_binary':
+        model = advanced_cnn_binary(input_shape)
     else:
         raise Exception('NameError','Unknown model name')
 
@@ -383,6 +419,82 @@ def evaluate(models, IMAGES_FOLDER, DATASET_NAME):
     plt.legend(loc="lower right")
     plt.show()
 
+ def evaluate_binary(models, IMAGES_FOLDER, DATASET_NAME):
+    """
+    evaluating binary classifier for 'dnm', 'iv' classes
+    """
+
+    from sklearn.metrics import roc_curve, auc, roc_auc_score
+
+    plt.figure()
+    lw = 2
+
+    for model in models:
+
+        val_folder = os.path.join(IMAGES_FOLDER, DATASET_NAME, 'val')
+        dnm_paths = [os.path.join(os.path.join(val_folder, 'dnm', path)) for path in os.listdir(os.path.join(val_folder, 'dnm'))]
+        iv_paths = [os.path.join(os.path.join(val_folder, 'iv', path)) for path in os.listdir(os.path.join(val_folder, 'iv'))]
+
+        validation_image_paths = dnm_paths + iv_paths
+
+        y_true = np.zeros((len(validation_image_paths), 1)).astype(int)
+        y_pred = np.zeros((len(validation_image_paths), 1)).astype(float)
+
+        for image_index, validation_image_path in tqdm(enumerate(validation_image_paths)):
+            
+            prediction_iv = TrioVariant.predict_image_path(validation_image_path, model['model'])[0,0]
+            prediction_dnm = 1. - prediction_iv
+
+            if 'iv' in validation_image_path:
+                y_true[image_index] = 0
+            else:
+                y_true[image_index] = 1
+            
+            y_pred[image_index] = prediction_dnm
+
+        false_positive_rate, true_positive_rate, thresholds = roc_curve(y_true, y_pred)
+        roc_auc = roc_auc_score(y_true, y_pred)
+        
+        tps = np.sum(y_true[y_pred > 0.5], axis=0)
+        fps = np.sum((1-y_true)[y_pred > 0.5], axis=0)
+        
+        tns = np.sum((1-y_true)[y_pred <= 0.5], axis=0)
+        fns = np.sum(y_true[y_pred <= 0.5], axis=0)
+
+        accuracy = (tps + tns) / (tps + tns + fps + fns)
+
+        sensitivity = tps / (tps + fns) #Recall
+        specificity = tns / (tns + fps)
+        precision = tps / (tps + fps)
+
+        f1_score = 2 * (precision * sensitivity) / (precision + sensitivity)
+
+
+        print('Model: {}'.format(model['name']))
+        print('ROC AUC score: {}'.format(roc_auc))
+        print('Accuracy: {}'.format(accuracy))
+        print('True positives: {}'.format(tps))
+        print('False positives: {}'.format(fps))
+        print('True negatives: {}'.format(tns))
+        print('False negative: {}'.format(fns))
+        print('Sensitivity: {}'.format(sensitivity))
+        print('Specificity: {}'.format(specificity))
+        print('F1 score: {}'.format(f1_score))
+        print()
+
+        # Plot
+        plt.plot(false_positive_rate, true_positive_rate, color=model['color'],
+                lw=lw, label='ROC curve {} '.format(model['name']) + '(area = %0.2f)' % roc_auc)
+        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        
+    # K.clear_session()
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic {}'.format(DATASET_NAME))
+    plt.legend(loc="lower right")
+    plt.show()
     
 
 def train(EPOCHS, IMAGES_FOLDER, DATASET_NAME, output_model_path, continue_training=False, input_model_path=None):
@@ -436,7 +548,7 @@ def train(EPOCHS, IMAGES_FOLDER, DATASET_NAME, output_model_path, continue_train
     callbacks_list = [lrate]#, early_stopping]
     
     custom_augmentation = CustomAugmentation(
-        probability=0.5, 
+        probability=0.85, 
         reads_cropping = True, 
         reads_shuffling = True
     )

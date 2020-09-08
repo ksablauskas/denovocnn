@@ -199,7 +199,7 @@ if [[ ${MODE} = "exome" ]]; then
     echo "DenovoCNN finished, output in:"
     echo $OUTPUT
 else
-    split -d -n 10 --additional-suffix=.txt $WORKDIR/intersected.txt $WORKDIR/intersected_part
+    split -d -l 10000 --additional-suffix=.txt $WORKDIR/intersected.txt $WORKDIR/intersected_part
     mkdir $WORKDIR/logs
     mkdir $WORKDIR/jobs
     

@@ -42,7 +42,7 @@ def get_job_query(workdir, child_bam, father_bam, mother_bam, genome, snp_model,
 
 # export PATH={env_path}
 
-KERAS_BACKEND=tensorflow python {path_to_main}\
+KERAS_BACKEND=tensorflow python {path_to_main} \
 --mode=predict \
 --genome={genome} \
 --child-bam={child_bam}\
@@ -55,7 +55,7 @@ KERAS_BACKEND=tensorflow python {path_to_main}\
 --output={output}
 """
     
-    return JOB_code
+    return JOB_code.strip()
 
 
 for intersected_file in os.listdir(args.workdir):

@@ -36,8 +36,8 @@ def get_job_query(workdir, child_bam, father_bam, mother_bam, genome, snp_model,
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={cpus_per_task}
 #SBATCH --mem-per-cpu={mem_per_cpu}
-#SBATCH --output={workdir}/logs/report_DeNovoNet_PREDICT_{intersected}.txt
-#SBATCH --error={workdir}/logs/error_DeNovoNet_PREDICT_{intersected}.txt
+#SBATCH --output={slurm_logpath}
+#SBATCH --error={slurm_errorpath}
 #SBATCH --partition={sbatch_partition}
 
 # export PATH={env_path}

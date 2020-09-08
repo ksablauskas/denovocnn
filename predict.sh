@@ -14,6 +14,7 @@ if [[ ("$1" == "-h") || ("$1" == "--help") ]]; then
   echo "    -im,--in-model : Path to insertion model."
   echo "    -dm,--del-model : Path to deletion model."
   echo "    -g,--genome : Path to genome fasta file."
+  echo "    -m,--mode : Mode of running: 'genome' or 'exome'."
   echo "    -o,--output : Output file name (will be saved to workdir)."
   exit 0
 fi
@@ -68,6 +69,10 @@ case $i in
     ;;
     -o=*|--output=*)
     OUTPUT="${i#*=}"
+    shift
+    ;;
+    -m=*|--mode=*)
+    MODE="${i#*=}"
     shift
     ;;
     --default) # is this needed?
@@ -134,13 +139,20 @@ if [[ ${WORKDIR} = "" ]]; then
     exit
 fi
 
+if [[ ${MODE} = "" ]]; then
+    echo "Error: MODE --mode must be provided!"
+    exit
+fi
+
+echo "Start preprocessing step"
+
 # Create intersected file
 mkdir $WORKDIR
 
 if [ $CHILD_VCF =  *"gz" ]; then
     cp $CHILD_VCF $WORKDIR/child.vcf.gz
 else
-    cp $CHILD_VCF $WORKDIR/child.vcf
+    bcftools sort $CHILD_VCF > $WORKDIR/child.vcf
     bgzip $WORKDIR/child.vcf
 fi
 BGZIPPED_CHILD_VCF=$WORKDIR/child.vcf.gz
@@ -149,7 +161,7 @@ tabix  -p vcf $BGZIPPED_CHILD_VCF
 if [ $FATHER_VCF =  *"gz" ]; then
     cp $FATHER_VCF $WORKDIR/father.vcf.gz
 else
-    cp $FATHER_VCF $WORKDIR/father.vcf
+    bcftools sort $FATHER_VCF > $WORKDIR/father.vcf
     bgzip $WORKDIR/father.vcf
 fi
 BGZIPPED_FATHER_VCF=$WORKDIR/father.vcf.gz
@@ -158,7 +170,7 @@ tabix  -p vcf $BGZIPPED_FATHER_VCF
 if [ $MOTHER_VCF =  *"gz" ]; then
     cp $MOTHER_VCF $WORKDIR/mother.vcf.gz
 else
-    cp $MOTHER_VCF $WORKDIR/mother.vcf
+    bcftools sort $MOTHER_VCF > $WORKDIR/mother.vcf
     bgzip $WORKDIR/mother.vcf
 fi
 BGZIPPED_MOTHER_VCF=$WORKDIR/mother.vcf.gz
@@ -166,21 +178,48 @@ tabix  -p vcf $BGZIPPED_MOTHER_VCF
 
 bcftools isec -C $BGZIPPED_CHILD_VCF $BGZIPPED_FATHER_VCF $BGZIPPED_MOTHER_VCF > $WORKDIR/intersected.txt
 
-# Run Python command
-KERAS_BACKEND=tensorflow python ./main.py \
---mode=predict \
---genome=$GENOME \
---child-bam=$CHILD_BAM \
---father-bam=$FATHER_BAM \
---mother-bam=$MOTHER_BAM \
---snp-model=$SNP_MODEL \
---in-model=$IN_MODEL \
---del-model=$DEL_MODEL \
---intersected=$WORKDIR/intersected.txt \
---output=$WORKDIR/$OUTPUT
+echo "Preprocessing step finished"
+
+if [[ ${MODE} = "exome" ]]; then
+    echo "Start DenovoCNN"
+
+    # Run Python command
+    KERAS_BACKEND=tensorflow python ./main.py \
+    --mode=predict \
+    --genome=$GENOME \
+    --child-bam=$CHILD_BAM \
+    --father-bam=$FATHER_BAM \
+    --mother-bam=$MOTHER_BAM \
+    --snp-model=$SNP_MODEL \
+    --in-model=$IN_MODEL \
+    --del-model=$DEL_MODEL \
+    --intersected=$WORKDIR/intersected.txt \
+    --output=$OUTPUT
+    
+    echo "DenovoCNN finished, output in:"
+    echo $OUTPUT
+else
+    split -d -n 10 --additional-suffix=.txt $WORKDIR/intersected.txt $WORKDIR/intersected_part
+    mkdir $WORKDIR/logs
+    mkdir $WORKDIR/jobs
+    
+    # Run Python command
+    python ./genomes_job_generator.py \
+    --workdir=$WORKDIR \
+    --genome=$GENOME \
+    --child-bam=$CHILD_BAM \
+    --father-bam=$FATHER_BAM \
+    --mother-bam=$MOTHER_BAM \
+    --snp-model=$SNP_MODEL \
+    --in-model=$IN_MODEL \
+    --del-model=$DEL_MODEL \
+    --output=$OUTPUT
+    
+    echo "Generated jobs for slurm in:"
+    echo $WORKDIR/jobs
+fi
 
 # Cleanup
 rm $WORKDIR/child.vcf.gz*
 rm $WORKDIR/father.vcf.gz*
 rm $WORKDIR/mother.vcf.gz*
-rm $WORKDIR/intersected.txt

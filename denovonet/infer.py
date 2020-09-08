@@ -61,6 +61,16 @@ def remove_matching_string(start, ref, var):
     else:
         return remove_matching_string(start, new_ref, new_var)
 
+def check_chromosome(chromosome):
+    accepted_chromosomes = [str(i) for i in range(1, 23)] + ['X', 'Y', 'MT']
+    
+    if 'chr' in chromosome.lower():
+        chromosome = chromosome.lower().replace('chr', '').upper()
+        
+    if chromosome not in accepted_chromosomes:
+        raise Exception('Wrong chromosome:', chromosome)
+        
+    return 'chr' + chromosome
 
 def split_comma_separated_variants(intersected_dataframe):
     original_intersected_array = np.array(intersected_dataframe)
@@ -68,6 +78,8 @@ def split_comma_separated_variants(intersected_dataframe):
 
     for row in original_intersected_array:
         chromosome, start, ref, var, extra = row
+        
+        chromosome = check_chromosome(chromosome)
         
         try:
             if ',' in var:

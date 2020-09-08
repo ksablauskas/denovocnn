@@ -64,6 +64,8 @@ def remove_matching_string(start, ref, var):
 def check_chromosome(chromosome):
     accepted_chromosomes = [str(i) for i in range(1, 23)] + ['X', 'Y', 'MT']
     
+    chromosome = str(chromosome)
+    
     if 'chr' in chromosome.lower():
         chromosome = chromosome.lower().replace('chr', '').upper()
         

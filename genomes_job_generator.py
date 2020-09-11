@@ -39,8 +39,8 @@ def get_job_query(workdir, child_bam, father_bam, mother_bam, genome, snp_model,
 #SBATCH --output={slurm_logpath}
 #SBATCH --error={slurm_errorpath}
 #SBATCH --partition={sbatch_partition}
-
 # export PATH={env_path}
+
 
 KERAS_BACKEND=tensorflow python {path_to_main} \
 --mode=predict \
@@ -54,7 +54,7 @@ KERAS_BACKEND=tensorflow python {path_to_main} \
 --intersected={intersected} \
 --output={output}
 """
-    
+
     return JOB_code.strip()
 
 

@@ -1,7 +1,10 @@
 from denovonet.settings import MINIMAL_COVERAGE
+from denovonet.settings import IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS, MODEL_ARCHITECTURE, NUMBER_CLASSES
+
 from denovonet.utils import get_variant_location
 from denovonet.encoders import VariantClassValue, VariantInheritance
 from denovonet.variants import SingleVariant, TrioVariant
+from denovonet.models import get_model
 
 from keras.models import load_model
 from keras import backend as K
@@ -58,6 +61,18 @@ def remove_matching_string(start, ref, var):
     else:
         return remove_matching_string(start, new_ref, new_var)
 
+def check_chromosome(chromosome):
+    accepted_chromosomes = [str(i) for i in range(1, 23)] + ['X', 'Y', 'MT']
+    
+    chromosome = str(chromosome)
+    
+    if 'chr' in chromosome.lower():
+        chromosome = chromosome.lower().replace('chr', '').upper()
+        
+    if chromosome not in accepted_chromosomes:
+        raise Exception('Wrong chromosome:', chromosome)
+        
+    return 'chr' + chromosome
 
 def split_comma_separated_variants(intersected_dataframe):
     original_intersected_array = np.array(intersected_dataframe)
@@ -65,6 +80,8 @@ def split_comma_separated_variants(intersected_dataframe):
 
     for row in original_intersected_array:
         chromosome, start, ref, var, extra = row
+        
+        chromosome = check_chromosome(chromosome)
         
         try:
             if ',' in var:
@@ -92,10 +109,17 @@ def infer_dnms_from_intersected(intersected_variants_tsv, child_bam, father_bam,
     print('SNP model',snp_model)
     print('Insertion model',in_model)
     print('Deletion model',del_model)
-
-    model_snps = load_model(snp_model)
-    model_insertions = load_model(in_model)
-    model_deletions = load_model(del_model)
+    
+    # load models with this approach to avoid pytorch versions compatibility conflict 
+    input_shape = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
+    
+    model_snps = get_model(MODEL_ARCHITECTURE, input_shape, NUMBER_CLASSES)
+    model_insertions = get_model(MODEL_ARCHITECTURE, input_shape, NUMBER_CLASSES)
+    model_deletions = get_model(MODEL_ARCHITECTURE, input_shape, NUMBER_CLASSES)
+    
+    model_snps.load_weights(snp_model)
+    model_insertions.load_weights(in_model)
+    model_deletions.load_weights(del_model)
 
     dnms_table = []
     start_time = time.time()
@@ -157,8 +181,11 @@ def infer_dnms_from_intersected(intersected_variants_tsv, child_bam, father_bam,
                 prediction_dnm = np.array([-2,-2])
             
             argmax = np.argmax(prediction, axis=1)
-
-            prediction_dnm = str(round(prediction[0,0],3))
+            
+            if MODEL_ARCHITECTURE == 'advanced_cnn_binary':
+                prediction_dnm = str(round(1.-prediction[0,0],3))
+            else:
+                prediction_dnm = str(round(prediction[0,0],3))
 
             dnms_table_row = [chromosome, start, end, reference, alternate, float(prediction_dnm), mean_start_coverage]
             dnms_table.append(dnms_table_row)

@@ -27,7 +27,7 @@ args = parser.parse_args()
 
 # SET ARGUMENTS
 
-def get_job_query(workdir, child_bam, father_bam, mother_bam, genome, snp_model, in_model, del_model, intersected, output):
+def get_job_query(workdir, child_bam, father_bam, mother_bam, genome, snp_model, in_model, del_model, intersected, output, slurm_logpath, slurm_errorpath):
 
     JOB_code = f"""
 #!/bin/bash
@@ -36,13 +36,13 @@ def get_job_query(workdir, child_bam, father_bam, mother_bam, genome, snp_model,
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={cpus_per_task}
 #SBATCH --mem-per-cpu={mem_per_cpu}
-#SBATCH --output={workdir}/logs/report_DeNovoNet_PREDICT_{intersected}.txt
-#SBATCH --error={workdir}/logs/error_DeNovoNet_PREDICT_{intersected}.txt
+#SBATCH --output={slurm_logpath}
+#SBATCH --error={slurm_errorpath}
 #SBATCH --partition={sbatch_partition}
-
 # export PATH={env_path}
 
-KERAS_BACKEND=tensorflow python {path_to_main}\
+
+KERAS_BACKEND=tensorflow python {path_to_main} \
 --mode=predict \
 --genome={genome} \
 --child-bam={child_bam}\
@@ -54,8 +54,8 @@ KERAS_BACKEND=tensorflow python {path_to_main}\
 --intersected={intersected} \
 --output={output}
 """
-    
-    return JOB_code
+
+    return JOB_code.strip()
 
 
 for intersected_file in os.listdir(args.workdir):
@@ -66,6 +66,18 @@ for intersected_file in os.listdir(args.workdir):
         jobs_save_path = os.path.join(args.workdir, 'jobs', jobs_file_name)
         
         output = args.output + "_" + intersected_file
+        
+        slurm_logs_filename = 'report_DeNovoNet_PREDICT_' + intersected_file
+        slurm_logpath = os.path.join(args.workdir, 'logs', slurm_logs_filename)
+        
+        slurm_error_logs_filename = 'error_DeNovoNet_PREDICT_' + intersected_file
+        slurm_errorpath = os.path.join(args.workdir, 'logs', slurm_error_logs_filename)
 
         with open(jobs_save_path, 'w') as f:
-            f.write(get_job_query(args.workdir, args.child_bam, args.father_bam, args.mother_bam, args.genome, args.snp_model, args.in_model, args.del_model, intersected_full_path, output))
+            f.write(
+                get_job_query(
+                    args.workdir, args.child_bam, args.father_bam, args.mother_bam, 
+                    args.genome, args.snp_model, args.in_model, args.del_model, 
+                    intersected_full_path, output, slurm_logpath, slurm_errorpath
+                )
+            )

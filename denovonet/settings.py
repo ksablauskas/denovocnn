@@ -33,7 +33,7 @@ else:
     CLASSIFICATION_NAME = 'multiclass'
 NUMBER_CLASSES = len(VARIANT_CLASSES)
 
-MODEL_ARCHITECTURE = 'cnn' #cnn or resnet_v2
+MODEL_ARCHITECTURE = 'advanced_cnn_binary' #advanced_cnn or cnn or resnet_v2
 
 WORKING_DIRECTORY = 'workdir'
 

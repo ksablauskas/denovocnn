@@ -45,7 +45,7 @@ def get_job_query(workdir, child_bam, father_bam, mother_bam, genome, snp_model,
 KERAS_BACKEND=tensorflow python {path_to_main} \
 --mode=predict \
 --genome={genome} \
---child-bam={child_bam}\
+--child-bam={child_bam} \
 --father-bam={father_bam} \
 --mother-bam={mother_bam} \
 --snp-model={snp_model} \

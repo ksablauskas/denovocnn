@@ -29,7 +29,7 @@ args = parser.parse_args()
 
 def get_job_query(workdir, child_bam, father_bam, mother_bam, genome, snp_model, in_model, del_model, intersected, output, slurm_logpath, slurm_errorpath):
 
-    JOB_code = f"""
+    JOB_code = """
 #!/bin/bash
 
 #SBATCH -J DeNovoNet_PREDICT_{intersected}
@@ -39,8 +39,8 @@ def get_job_query(workdir, child_bam, father_bam, mother_bam, genome, snp_model,
 #SBATCH --output={slurm_logpath}
 #SBATCH --error={slurm_errorpath}
 #SBATCH --partition={sbatch_partition}
-# export PATH={env_path}
 
+# export PATH={env_path}
 
 KERAS_BACKEND=tensorflow python {path_to_main} \
 --mode=predict \
@@ -53,31 +53,58 @@ KERAS_BACKEND=tensorflow python {path_to_main} \
 --del-model={del_model} \
 --intersected={intersected} \
 --output={output}
-"""
-
+""".format(
+    intersected=intersected, 
+    cpus_per_task=cpus_per_task, 
+    mem_per_cpu=mem_per_cpu,
+    slurm_logpath=slurm_logpath,
+    slurm_errorpath=slurm_errorpath,
+    sbatch_partition=sbatch_partition,
+    env_path=env_path,
+    path_to_main=path_to_main,
+    genome=genome, 
+    child_bam=child_bam,
+    father_bam=father_bam,
+    mother_bam=mother_bam, 
+    snp_model=snp_model,
+    in_model=in_model,
+    del_model=del_model,
+    output=output
+    )
+    
     return JOB_code.strip()
 
+def get_all_partition_files(workdir):
+    files = list(os.listdir(workdir))
 
-for intersected_file in os.listdir(args.workdir):
-    if "intersected_part" in intersected_file:
-        intersected_full_path = os.path.join(args.workdir, intersected_file)
-        
-        jobs_file_name = "job_" + intersected_file
-        jobs_save_path = os.path.join(args.workdir, 'jobs', jobs_file_name)
-        
-        output = args.output + "_" + intersected_file
-        
-        slurm_logs_filename = 'report_DeNovoNet_PREDICT_' + intersected_file
-        slurm_logpath = os.path.join(args.workdir, 'logs', slurm_logs_filename)
-        
-        slurm_error_logs_filename = 'error_DeNovoNet_PREDICT_' + intersected_file
-        slurm_errorpath = os.path.join(args.workdir, 'logs', slurm_error_logs_filename)
+    has_partitions = sum([1 if "intersected_part" in filename else 0 for filename in files]) > 0
 
-        with open(jobs_save_path, 'w') as f:
-            f.write(
-                get_job_query(
-                    args.workdir, args.child_bam, args.father_bam, args.mother_bam, 
-                    args.genome, args.snp_model, args.in_model, args.del_model, 
-                    intersected_full_path, output, slurm_logpath, slurm_errorpath
-                )
+    if has_partitions:
+        return [filename for filename in files if "intersected_part" in filename]
+    else:
+        return [filename for filename in files if "intersected.txt" in filename]
+
+    return []
+
+for intersected_file in get_all_partition_files(args.workdir):
+    intersected_full_path = os.path.join(args.workdir, intersected_file)
+    
+    jobs_file_name = "job_" + intersected_file
+    jobs_save_path = os.path.join(args.workdir, 'jobs', jobs_file_name)
+    
+    output = args.output + "_" + intersected_file
+    
+    slurm_logs_filename = 'report_DeNovoNet_PREDICT_' + intersected_file
+    slurm_logpath = os.path.join(args.workdir, 'logs', slurm_logs_filename)
+    
+    slurm_error_logs_filename = 'error_DeNovoNet_PREDICT_' + intersected_file
+    slurm_errorpath = os.path.join(args.workdir, 'logs', slurm_error_logs_filename)
+
+    with open(jobs_save_path, 'w') as f:
+        f.write(
+            get_job_query(
+                args.workdir, args.child_bam, args.father_bam, args.mother_bam, 
+                args.genome, args.snp_model, args.in_model, args.del_model, 
+                intersected_full_path, output, slurm_logpath, slurm_errorpath
             )
+        )

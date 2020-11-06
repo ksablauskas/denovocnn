@@ -96,9 +96,9 @@ KERAS_BACKEND=tensorflow python main.py \
 
 ### Prediction
 To use the pretrained models, you can download them separately:
-- [Substitution model](https://drive.google.com/file/d/1v_Z11wpW5WUEauS8M638ZPJaI3qRlq3a/view?usp=sharing)
-- [Deletion model](https://drive.google.com/file/d/1efyy7mpcARbOkzAkup0fyMf_FxQG7sYM/view?usp=sharing)
-- [Insertion model](https://drive.google.com/file/d/1hoI9BIIOoXFSkYoYeradCO5ZDYlWzgRU/view?usp=sharing)
+- [Substitution model](https://www.dropbox.com/s/c5lwmq7ubqj2jpy/snp.advanced_model.45.h5?dl=0)
+- [Deletion model](https://www.dropbox.com/s/oxdbvns6vjjxo09/deletions.advanced_model.45.h5?dl=0)
+- [Insertion model](https://www.dropbox.com/s/3hdv7ti4xg97lmi/insertions.advanced_model.45.h5?dl=0)
 
 <b>Important: denovoCNN expects recallibrated BAM files using BQSR, more [here](https://gatk.broadinstitute.org/hc/en-us/articles/360035890531-Base-Quality-Score-Recalibration-BQSR-).</b> VCF files can be generated using your preffered variant caller.<br>
 *If you're running denovoCNN on WGS data, it is recommended to split the VCF files into 10 or more parts and run each of them separately.

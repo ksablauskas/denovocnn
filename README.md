@@ -117,6 +117,7 @@ To use the pretrained models, you can download them separately:
 -im <INSERTION_MODEL> \
 -dm <DELETION_MODEL> \
 -g <REFERENCE_GENOME> \
+-m <MODE> \
 -o <OUTPUT_FILE_NAME>
 ```
 OR
@@ -134,6 +135,9 @@ KERAS_BACKEND=tensorflow python main.py \
 --del-model=<PATH_TO_DELETION_MODEL>
 ```
 
+<b><MODE>=genome</b> separates the variants into parts and creates a sbatch job files for each part.
+<b><MODE>=exome</b> runs the tool for all found variants.
+     
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
